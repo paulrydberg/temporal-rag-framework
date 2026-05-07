@@ -11,13 +11,13 @@ services:
       - ./models:/app/models
       - ./rag/vectorstore:/app/rag/vectorstore
       - ./data:/app/data
-      - ./prompts:/app/prompts
-      - ./scripts:/app/scripts
+      - ./config:/app/config
     environment:
       - MODEL_PATH=/app/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
       - LLAMA_CPP_THREADS=4
       - DEVICE=cpu
       - CHROMA_PERSIST_DIR=/app/rag/vectorstore
+      - TEMPORAL_CUTOFF=1931-01-01
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     restart: unless-stopped
 
@@ -28,10 +28,10 @@ services:
     volumes:
       - ./rag/vectorstore:/app/rag/vectorstore
       - ./data:/app/data
-      - ./scripts:/app/scripts
     environment:
       - CHROMA_PERSIST_DIR=/app/rag/vectorstore
       - DEVICE=cpu
+      - TEMPORAL_CUTOFF=1931-01-01
     command: python -m app.ingest_pipeline
     profiles:
       - ingest

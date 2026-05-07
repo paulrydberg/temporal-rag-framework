@@ -26,6 +26,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ /app/app/
+COPY core/ /app/core/
 COPY config/ /app/config/
 COPY prompts/ /app/prompts/
 COPY scripts/ /app/scripts/
@@ -35,6 +36,8 @@ RUN mkdir -p /app/data/raw /app/data/processed /app/rag/vectorstore /app/benchma
 RUN adduser --disabled-password --gecos "" appuser
 RUN chown -R appuser:appuser /app
 USER appuser
+
+ENV TEMPORAL_CUTOFF=1931-01-01
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"

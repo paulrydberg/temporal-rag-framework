@@ -1,0 +1,18 @@
+# Single unified configuration for the temporal reasoning system.
+# All per-profile YAML files replaced by this single file + runtime cutoff_date.
+
+base_forbidden_terms:
+  - "AI assistant"
+  - "LLM"
+  - "language model"
+
+default_style: neutral
+default_strictness: medium
+default_cutoff: "1931-01-01"
+
+# Legacy profile presets (code-only, documented for reference):
+# pre_1931    -> 1931-01-01
+# pre_1965    -> 1965-01-01
+# victorian   -> 1901-01-22
+# pre_internet -> 1995-01-01
+# cold_war    -> 1991-12-26

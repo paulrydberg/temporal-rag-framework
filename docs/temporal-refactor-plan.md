@@ -1,36 +1,35 @@
 # Temporal Refactor Plan
 
-## Audit: Hardcoded Pre-1931 References Found
+## Phase 2: Cutoff-Driven Architecture (May 2026)
 
-The following files contained hardcoded references to 1931 or 1930:
+Previous state: Multi-profile YAML system (5+ files)
+New state: Single TemporalContext class driven by cutoff_date
 
-| File | Issue | Status |
-|------|-------|--------|
-| app/temporal_filter.py | FORBIDDEN_TERMS hardcoded, date patterns 1980-2099 | Removed, replaced by profiles |
-| app/main.py | build_prompt() hardcoded before 1931 | Refactored to use profile |
-| app/inference.py | No profile awareness | Still standalone (subprocess-based) |
-| prompts/pre1931_system.txt | Entire file hardcoded to 1931 | Kept as example, replaced by profile system |
-| scripts/run_historical.sh | Contains hardcoded prompt text | Updated to use profile |
-| README.md | Multiple pre-1931 references | Rewritten as Temporal Framework |
+### What Changed
 
-## Refactoring Applied
+1. **core/temporal/** module replaces app/temporal_profile.py
+   - context.py -> TemporalContext(cutoff_date, strictness)
+   - rules_engine.py -> dynamic forbidden term generation from concept->year mapping
+   - prompt_enforcer.py -> system prompt from cutoff + era style
+   - vocabulary_builder.py -> alternative milestone-based term generation
 
-1. Created config/temporal_profiles/ with 5 YAML profiles (pre_1931, pre_1965, victorian, pre_internet, cold_war)
-2. Created app/temporal_profile.py with TemporalProfile + ProfileRegistry classes
-3. Created app/prompt_builder.py for dynamic prompt construction from any profile
-4. Created app/rag_manager.py with profile-partitioned vectorstores
-5. Refactored app/main.py with profile-driven API (/profiles/, /chat with profile parameter)
-6. Removed app/temporal_filter.py (hardcoded terms)
-7. Updated Dockerfile and docker-compose.yml for new structure
-8. Rewrote README.md as Temporal Intelligence Framework
-9. Created tests/ (9 tests, all passing)
-10. Created benchmark templates
+2. **Config** simplification
+   - config/temporal_defaults.yaml (single file)
+   - Removed: config/temporal_profiles/ directory (5 YAML files)
 
-## Naming Decision
+3. **RAG** simplification
+   - Removed profile-based vectorstore partitioning
+   - Single unified collection with document_date metadata
+   - Metadata filter: document_date <= cutoff_date
 
-Repository renamed from **historical-rag-agent** to **temporal-rag-framework**.
+4. **API** simplification
+   - Replaced: /profiles/ endpoints
+   - Added: /temporal/context (GET + POST)
+   - New /chat: accepts cutoff_date + strictness instead of profile
 
-Rationale:
-- Temporal reflects the generalized time-bound constraint paradigm
-- RAG preserves the retrieval component
-- Framework implies extensibility beyond a single agent
+5. **Backward compatibility**
+   - Legacy profile names (pre_1931, victorian, etc.) resolve to cutoff_date
+   - /profiles endpoint returns preset info (no-op)
+
+### File Changes
+...
