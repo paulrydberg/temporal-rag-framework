@@ -1,6 +1,4 @@
-# ============================================================
 # Stage 1: llama.cpp build
-# ============================================================
 FROM debian:bookworm-slim AS llama-builder
 
 RUN apt-get update && apt-get install -y \
@@ -12,9 +10,7 @@ RUN git clone --depth 1 --branch b4100 https://github.com/ggerganov/llama.cpp /o
 WORKDIR /opt/llama.cpp
 RUN mkdir build && cd build && cmake .. -DLLAMA_CUBLAS=OFF -DLLAMA_NATIVE=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build . --config Release -j$(nproc) --target llama-cli llama-server
 
-# ============================================================
 # Stage 2: Python runtime
-# ============================================================
 FROM python:3.11-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
@@ -30,8 +26,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ /app/app/
+COPY config/ /app/config/
 COPY prompts/ /app/prompts/
 COPY scripts/ /app/scripts/
+
+RUN mkdir -p /app/data/raw /app/data/processed /app/rag/vectorstore /app/benchmarks/results
 
 RUN adduser --disabled-password --gecos "" appuser
 RUN chown -R appuser:appuser /app

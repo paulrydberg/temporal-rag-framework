@@ -1,4 +1,4 @@
-"""Historical document ingestion pipeline."""
+"""Historical document ingestion pipeline using profile-aware RAGManager."""
 
 import os, glob, logging, time
 from pathlib import Path
@@ -17,11 +17,12 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> list[st
     return chunks
 
 
-def ingest_files():
+def ingest_files(profile_name: str = "pre_1931"):
     try:
-        from app.rag_retriever import RAGRetriever
+        from app.rag_manager import RAGManager
         persist_dir = os.environ.get("CHROMA_PERSIST_DIR", "/app/rag/vectorstore")
-        retriever = RAGRetriever(persist_dir)
+        rag = RAGManager(persist_dir)
+
         data_dir = "/app/data/processed"
         if not os.path.exists(data_dir):
             logger.warning(f"Data directory {data_dir} not found. Creating placeholder.")
@@ -29,7 +30,7 @@ def ingest_files():
             sample = Path(data_dir) / "sample_1908_encyclopedia.txt"
             if not sample.exists():
                 sample.write_text(
-                    "ELECTRICITY. \u2014 A form of energy observed in natural phenomena such as lightning, "
+                    "ELECTRICITY. A form of energy observed in natural phenomena such as lightning, "
                     "static discharge, and the action of voltaic cells. In the early twentieth century, "
                     "electricity is understood as the flow of electrons through conductive media. "
                     "The practical applications include incandescent lighting, electric motors, "
@@ -37,22 +38,24 @@ def ingest_files():
                     "\n\nSource: Adapted from the 1908 edition of Harmsworth Encyclopaedia."
                 )
             logger.info("Created sample historical document.")
+
         text_files = glob.glob(os.path.join(data_dir, "*.txt"))
         if not text_files:
             logger.warning(f"No text files found in {data_dir}")
             return 0
+
         total_chunks = 0
         for filepath in text_files:
             filename = os.path.basename(filepath)
-            logger.info(f"Ingesting {filename}...")
+            logger.info(f"Ingesting {filename} into profile '{profile_name}'...")
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 text = f.read()
             chunks = chunk_text(text)
             for chunk in chunks:
-                retriever.add_document(chunk, metadata={"source": filename, "chunk_size": len(chunk)})
+                rag.add_document(chunk, profile_name=profile_name, metadata={"source": filename, "chunk_size": len(chunk)})
                 total_chunks += 1
             logger.info(f"  -> {len(chunks)} chunks from {filename}")
-        logger.info(f"Ingestion complete: {total_chunks} total chunks across {len(text_files)} files")
+        logger.info(f"Ingestion complete: {total_chunks} total chunks into profile '{profile_name}'")
         return total_chunks
     except Exception as e:
         logger.error(f"Ingestion pipeline failed: {e}")
@@ -60,7 +63,8 @@ def ingest_files():
 
 
 if __name__ == "__main__":
+    profile = os.environ.get("INGEST_PROFILE", "pre_1931")
     t0 = time.time()
-    count = ingest_files()
+    count = ingest_files(profile)
     elapsed = time.time() - t0
-    logger.info(f"Ingestion finished in {elapsed:.1f}s. Chunks ingested: {count}")
+    logger.info(f"Ingestion for profile '{profile}' finished in {elapsed:.1f}s. Chunks: {count}")

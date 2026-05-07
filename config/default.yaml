@@ -1,0 +1,19 @@
+temporal:
+  default_profile: pre_1931
+  strict_mode: true
+  sensitivity: moderate
+rag:
+  embedder_model: all-MiniLM-L6-v2
+  chunk_size: 1000
+  chunk_overlap: 100
+  top_k: 3
+  device: cpu
+model:
+  path: /app/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+  n_threads: 4
+  ngl_layers: 0
+  temperature: 0.3
+  max_tokens: 300
+api:
+  host: 0.0.0.0
+  port: 8000

@@ -1,22 +1,127 @@
-# Historical RAG Agent
+# Temporal RAG Framework
 
-**Pre-1931 Knowledge-Constrained Reasoning with Retrieval-Augmented Generation**
+**A Generalized Temporal Constraint Intelligence Framework**
 
-A fully reproducible, Dockerized historical reasoning system that enforces a knowledge boundary of January 1, 1931. Built on Qwen 2.5 7B Instruct, llama.cpp, ChromaDB, and FastAPI.
+Configurable knowledge-boundary enforcement with retrieval-augmented generation,
+supporting any historical cutoff year, era, or temporal worldview.
 
 ---
 
 ## Quick Start
 
-```
-git clone https://github.com/paulrydberg/historical-rag-agent.git
-cd historical-rag-agent
+```bash
+git clone https://github.com/paulrydberg/temporal-rag-framework.git
+cd temporal-rag-framework
 ./scripts/download_model.sh
 docker compose build
 docker compose up -d
 docker compose --profile ingest run ingest
-curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '{"prompt": "Explain what electricity is", "temperature": 0.3}'
+
+# Chat with pre-1931 profile (default)
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"profile": "pre_1931", "prompt": "Explain electricity"}'
+
+# Switch to Victorian era
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"profile": "victorian", "prompt": "Describe steam engines"}'
 ```
+
+---
+
+## Architecture
+
+```
+  User / API Client
+         |
+    HTTP :8000
+         |
+  FastAPI Server
+   |          |            |          |
+ Inference   RAG       Temporal    Profile
+  Engine   Manager    Validator    Registry
+   |          |            |          |
+ llama.cpp  ChromaDB    Profile-    YAML files
+ (Qwen 7B) (partitioned  driven    (5 built-in)
+            by era)      regex
+```
+
+---
+
+## Built-in Profiles
+
+| Profile | Cutoff | Description |
+|---------|--------|-------------|
+| pre_1931 | 1931 | Pre-1931 historical reasoning |
+| pre_1965 | 1965 | Mid-century, vacuum tubes, early computing |
+| victorian | 1901 | Victorian era natural philosophy |
+| pre_internet | 1995 | Pre-web, analog media era |
+| cold_war | 1991 | Cold War strategic analysis |
+
+Use any profile via `"profile": "name"` in requests. Default: `pre_1931`.
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /health | System status with loaded profiles |
+| GET | /profiles | List all temporal profiles |
+| GET | /profiles/{name} | Get profile details |
+| POST | /profiles/create | Create new temporal profile |
+| POST | /profiles/reload | Hot-reload profiles from disk |
+| POST | /chat | Chat with profile-constrained inference |
+| POST | /rag/search | Search era-partitioned RAG |
+| GET | /rag/stats | RAG collection statistics |
+| GET | /benchmark | Run performance benchmarks |
+
+---
+
+## Creating Custom Profiles
+
+### Via API
+
+```bash
+curl -X POST http://localhost:8000/profiles/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "pre_wwi",
+    "label": "Pre-World War I",
+    "cutoff_year": 1914,
+    "forbidden_terms": ["airplane", "radio", "television"],
+    "system_prompt": "You are a pre-WWI reasoning model."
+  }'
+```
+
+### Via YAML
+
+Add a file to `config/temporal_profiles/` and call POST /profiles/reload.
+
+---
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Prompt eval | 53.5 tok/s |
+| Generation | 11.2 tok/s |
+| RAG latency | ~50ms |
+| Filter latency | <1ms |
+| Profile switch | <10ms |
+
+---
+
+## Use Cases
+
+- **Historical simulation** — roleplay historical figures with period-accurate knowledge
+- **Educational** — teach historical scientific understanding without modern framing
+- **Alternate worldview simulation** — reason within pre-modern frameworks
+- **Research** — analyze how historical thinkers approach modern questions
+- **Content creation** — period-accurate dialogue, writing, or explanations
+
+---
 
 ## Hardware Requirements
 
@@ -27,47 +132,23 @@ curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '
 | Disk | 10 GB | 20 GB |
 | GPU | Not required | RTX 3070+ |
 
-CPU-only at 11.2 tok/s.
+CPU-only at ~11.2 tok/s (Qwen 2.5 7B Q4_K_M GGUF).
 
-## Architecture
-
-User Client -> FastAPI -> [Inference (llama.cpp/Qwen 7B), RAG (ChromaDB), Temporal Filter]
-
-## How It Works
-
-1. **Knowledge Constraint**: System prompt enforces January 1, 1931 cutoff. Regex filter validates output against 50+ modern terms.
-2. **Historical RAG**: Documents chunked, embedded via sentence-transformers, stored in ChromaDB.
-3. **Inference**: Qwen 2.5 7B via llama.cpp CLI subprocess. CPU-only, Q4_K_M quantization.
-
-## API Endpoints
-
-- POST /chat - Primary inference with optional RAG + temporal constraint
-- GET /health - System status (model_loaded, rag_loaded, temporal_filter)
-- POST /rag/search - Direct RAG search
-- GET /benchmark - Run performance benchmarks
-
-## Performance
-
-| Metric | Value |
-|--------|-------|
-| Prompt eval | 53.5 tok/s |
-| Generation | 11.2 tok/s |
-| RAG latency | ~50ms |
-| Filter latency | <1ms |
-
-## Why Not Talkie 1930?
-
-The Talkie 1930 13B model family has a fundamental output layer corruption: resize_model_embeddings added OOV tokens with 4x variance, and lm_head_gain=3.89 amplifies them. Qwen 2.5 7B provides a clean, stable alternative with the constraint enforced via system prompt.
+---
 
 ## Reproducibility
 
-```
-git clone https://github.com/paulrydberg/historical-rag-agent.git
-cd historical-rag-agent
+```bash
+git clone https://github.com/paulrydberg/temporal-rag-framework.git
+cd temporal-rag-framework
 docker compose build --no-cache
 ./scripts/download_model.sh
 docker compose up -d
 ```
+
+## License
+
+MIT
 
 ---
 
