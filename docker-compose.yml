@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./rag/vectorstore:/app/rag/vectorstore
+      - ./data:/app/data
+      - ./prompts:/app/prompts
+      - ./scripts:/app/scripts
+    environment:
+      - MODEL_PATH=/app/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+      - LLAMA_CPP_THREADS=4
+      - DEVICE=cpu
+      - CHROMA_PERSIST_DIR=/app/rag/vectorstore
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./rag/vectorstore:/app/rag/vectorstore
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+    environment:
+      - CHROMA_PERSIST_DIR=/app/rag/vectorstore
+      - DEVICE=cpu
+    command: python -m app.ingest_pipeline
+    profiles:
+      - ingest
